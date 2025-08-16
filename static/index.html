@@ -85,6 +85,10 @@
             overflow: hidden; 
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
+        button:disabled {
+            cursor: not-allowed;
+            background: var(--muted);
+        }
         button:not(.ghost)::before {
             content: '';
             position: absolute;
@@ -96,7 +100,7 @@
             transform: skewX(-25deg);
             transition: left 0.6s ease;
         }
-        button:hover { 
+        button:hover:not(:disabled) { 
             transform: translateY(-2px) translateZ(20px);
             box-shadow: 0 8px 20px rgba(0,0,0,0.3), 0 0 20px rgba(var(--accent-rgb), 0.5);
         }
@@ -105,7 +109,7 @@
         }
         button:active { transform: scale(0.97) translateZ(10px); }
         .ghost { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.2);}
-        .ghost:hover { background: var(--card-hover-bg); }
+        .ghost:hover:not(:disabled) { background: var(--card-hover-bg); }
 
         .input-container { position: relative; display: flex; align-items: center; }
         input[type="text"] {
@@ -187,7 +191,7 @@
         html[data-theme="light"] input[type="text"] {
              background: rgba(0,0,0,0.02);
         }
-        html[data-theme="light"] button:hover {
+        html[data-theme="light"] button:hover:not(:disabled) {
             box-shadow: 0 8px 20px var(--shadow-color), 0 0 20px rgba(var(--accent-rgb), 0.4);
         }
         html[data-theme="light"] .card:hover,
@@ -197,14 +201,11 @@
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        button.listening .mic-icon { animation: pulse 1.s infinite; }
+        button.listening .mic-icon { animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
         
         footer { margin-top: 24px; text-align: center; color: var(--muted); font-size: 13px; }
         
-        /* =================================================================== */
-        /* --- RESPONSIVENESS CODE FOR ALL DEVICES --- */
-        /* =================================================================== */
         @media (max-width: 900px) {
             main {
                 grid-template-columns: 1fr;
@@ -247,17 +248,14 @@
             main, button:hover, .card:hover, .hist-item:hover, .brand:hover .logo, .brand:hover h1 {
                 transform: none;
             }
-            button:hover {
+            button:hover:not(:disabled) {
                 box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             }
-            html[data-theme="light"] button:hover {
+            html[data-theme="light"] button:hover:not(:disabled) {
                  box-shadow: 0 4px 15px var(--shadow-color);
             }
             button:active {
                 transform: scale(0.97);
-            }
-            .brand .small {
-                display: none;
             }
         }
     </style>
@@ -280,15 +278,15 @@
             </div>
             <button id="runBtn">Run</button>
             <button id="speakBtn"><span class="mic-icon">🎤</span> Speak</button>
-            <button id="ttsBtn" class="ghost" title="Toggle Text-to-Speech">🔊</button>
-            <button id="themeBtn" class="ghost" title="Toggle Theme">☀️</button>
+            <button id="ttsBtn" class="ghost" title="Toggle Text-to-Speech" aria-label="Toggle Text to Speech">🔊</button>
+            <button id="themeBtn" class="ghost" title="Toggle Theme" aria-label="Toggle Theme">☀️</button>
         </div>
     </header>
 
     <main>
         <section id="left" class="panel">
             <div id="youSaid" class="small">—</div>
-            <div id="output">
+            <div id="output" aria-live="polite">
                 <div class="card">
                     <div class="meta">
                         <h3>Welcome!</h3>
@@ -360,7 +358,6 @@ const api = {
     getNews: () => api.get('/get_news'),
     getWeather: city => api.get(`/get_weather?city=${encodeURIComponent(city)}`),
     getWikipedia: query => api.get(`/search_wikipedia?query=${encodeURIComponent(query)}`),
-    // Note: The original 'playYoutube' is removed as we now handle it on the client-side for better compatibility.
     searchGoogle: query => api.get(`/search_google?query=${encodeURIComponent(query)}`),
     getJoke: () => api.get('/get_joke'),
     getQuote: () => api.get('/get_quote')
@@ -387,7 +384,12 @@ const render = {
 // 5. HISTORY MANAGEMENT
 // =================================================================================
 function saveHistory() {
-    localStorage.setItem('va_history', JSON.stringify(appState.history));
+    // BUG FIX: Wrap localStorage in try/catch to prevent crashes in private mode
+    try {
+        localStorage.setItem('va_history', JSON.stringify(appState.history));
+    } catch (e) {
+        console.error("Failed to save history:", e);
+    }
     renderHistory();
 }
 function pushHistory(cmd, summary) {
@@ -410,15 +412,13 @@ const commands = [
     { regex: /news/i, handler: async () => { const data = await api.getNews(); if (data.news?.length) { UI.output.innerHTML = render.news(data.news); speak('Here are the latest news headlines.'); return { summary: 'Fetched news' }; } else { throw new Error("No news available at the moment."); } } },
     { regex: /weather in (.+)/i, handler: async (matches) => { const city = matches[1]; const data = await api.getWeather(city); if (data.main && data.weather?.[0]) { const temp = (data.main.temp - 273.15).toFixed(1); const desc = data.weather[0].description; UI.output.innerHTML = render.weather(data, city); speak(`The temperature in ${city} is ${temp} degrees with ${desc}`); return { summary: `${temp}°C ${desc}` }; } else { throw new Error(`Could not find weather for ${city}.`); } } },
     { regex: /^(?:what is|who is|wikipedia|search for) (.+)/i, handler: async (matches) => { const query = matches[1]; const data = await api.getWikipedia(query); if (data.result) { UI.output.innerHTML = render.wikipedia(data.result); speak(data.result.extract || `Showing Wikipedia summary for ${data.result.title}`); return { summary: `Wiki: ${data.result.title}` }; } else { throw new Error(data.error || `No Wikipedia result found for ${query}.`); } } },
-    
-    /* --- NEW YOUTUBE COMMANDS START HERE --- */
     { 
-        regex: /^play (.+?)(?: on youtube)?$/i, // Matches "play something" and "play something on youtube"
+        regex: /^play (.+?)(?: on youtube)?$/i,
         handler: async (matches) => {
             const query = matches[1].trim();
             const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
             UI.output.innerHTML = render.card('YouTube', `Searching for "${escapeHtml(query)}" on YouTube... <a href="${url}" class="link" target="_blank">Click here if it doesn't open</a>`);
-            window.open(url, '_blank'); // Opens the search in a new tab
+            window.open(url, '_blank');
             speak(`Searching for ${query} on YouTube.`);
             return { summary: `Searched YouTube for: ${query}` };
         } 
@@ -433,17 +433,24 @@ const commands = [
             return { summary: "Opened YouTube" };
         }
     },
-    /* --- NEW YOUTUBE COMMANDS END HERE --- */
-
     { regex: /^(?:google|search) (.+)/i, handler: async (matches) => { const query = matches[1]; UI.output.innerHTML = render.card('Google Search', `Searching for "${escapeHtml(query)}" on your machine...`); await api.searchGoogle(query); speak(`Launching Google search for ${query}.`); return { summary: `Googled: ${query}` }; } },
     { regex: /joke/i, handler: async () => { const data = await api.getJoke(); UI.output.innerHTML = render.card('😂 Joke', escapeHtml(data.joke)); speak(data.joke); return { summary: 'Told a joke' }; } },
     { regex: /quote/i, handler: async () => { const data = await api.getQuote(); const quoteText = `${data.quote} — ${data.author || 'Unknown'}`; UI.output.innerHTML = render.card('💡 Quote', escapeHtml(quoteText)); speak(`${data.quote} by ${data.author || 'an unknown author'}.`); return { summary: 'Shared a quote' }; } }
 ];
+
+// UX IMPROVEMENT: This function is now enhanced to manage button states.
 async function handleCommand(raw) {
     if (!raw) return;
+    
+    // UX IMPROVEMENT: Disable buttons and show processing state to prevent multiple commands.
+    UI.runBtn.disabled = true;
+    UI.speakBtn.disabled = true;
+    UI.speakBtn.innerHTML = `<span class="mic-icon">Processing...</span>`;
+
     const cmd = raw.trim();
     UI.output.innerHTML = render.loading();
     UI.youSaid.innerHTML = `You said: <strong>${escapeHtml(cmd)}</strong>`;
+    
     try {
         for (const command of commands) {
             const matches = cmd.match(command.regex);
@@ -458,6 +465,13 @@ async function handleCommand(raw) {
         console.error(err);
         UI.output.innerHTML = render.error(err.message || String(err));
         speak("An error occurred. Please try again.");
+    } finally {
+        // UX IMPROVEMENT: Re-enable buttons after command is finished, in all cases.
+        UI.runBtn.disabled = false;
+        if (SpeechRecognition) {
+            UI.speakBtn.disabled = false;
+            UI.speakBtn.innerHTML = `<span class="mic-icon">🎤</span> Speak`;
+        }
     }
 }
 
@@ -478,7 +492,12 @@ function init() {
     UI.themeBtn.onclick = () => {
         const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        localStorage.setItem('theme', newTheme);
+        // BUG FIX: Wrap localStorage in try/catch
+        try {
+            localStorage.setItem('theme', newTheme);
+        } catch (e) {
+            console.error("Failed to save theme:", e);
+        }
         applyTheme(newTheme);
     };
     const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -491,16 +510,26 @@ function init() {
     updateTtsUI();
     UI.ttsBtn.onclick = () => {
         appState.ttsEnabled = !appState.ttsEnabled;
-        localStorage.setItem('va_ttsEnabled', appState.ttsEnabled);
+        // BUG FIX: Wrap localStorage in try/catch
+        try {
+            localStorage.setItem('va_ttsEnabled', appState.ttsEnabled);
+        } catch (e) {
+            console.error("Failed to save TTS setting:", e);
+        }
         updateTtsUI();
     };
 
     // --- History setup ---
     renderHistory();
-    UI.clearHistoryBtn.onclick = () => { appState.history = []; saveHistory(); };
+    UI.clearHistoryBtn.addEventListener('click', () => { 
+        appState.history = []; 
+        saveHistory(); 
+    });
     UI.historyDiv.addEventListener('click', e => {
         const item = e.target.closest('.hist-item');
         if (item && item.dataset.command) {
+            // UX IMPROVEMENT: Update input field when clicking history.
+            UI.textInput.value = item.dataset.command;
             handleCommand(item.dataset.command);
         }
     });
@@ -530,7 +559,11 @@ function init() {
         recognition.continuous = false;
         recognition.interimResults = false;
         recognition.onstart = () => { appState.isListening = true; UI.speakBtn.classList.add('listening'); UI.speakBtn.innerHTML = `<span class="mic-icon">Listening...</span>`; };
-        recognition.onend = () => { appState.isListening = false; UI.speakBtn.classList.remove('listening'); UI.speakBtn.innerHTML = `<span class="mic-icon">🎤</span> Speak`; };
+        // UX IMPROVEMENT: 'onend' is simplified as handleCommand now manages the button state.
+        recognition.onend = () => { 
+            appState.isListening = false; 
+            UI.speakBtn.classList.remove('listening'); 
+        };
         recognition.onresult = e => { const text = e.results[0][0].transcript; handleCommand(text); };
         recognition.onerror = e => { console.error('Speech recognition error', e); UI.output.innerHTML = render.error(e.error || 'Microphone error. Please check permissions.'); };
         UI.speakBtn.onclick = () => { if (appState.isListening) { recognition.stop(); } else { recognition.start(); } };
