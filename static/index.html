@@ -153,6 +153,11 @@
         #left { min-height: 420px; }
         #youSaid { font-size: 14px; color: var(--muted); margin-bottom: 16px; min-height: 20px;}
         #output { display: grid; gap: 16px; }
+        
+        /* --- FIX: Ensures text in results is visible on mobile dark mode --- */
+        .panel p, .panel div, .panel li, .panel strong, .panel b, .panel ul {
+            color: var(--text);
+        }
 
         .card, .hist-item {
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -169,7 +174,7 @@
         .thumb { width: 120px; height: 80px; object-fit: cover; border-radius: 8px; background: #0f1724; flex-shrink: 0; }
         .meta { flex: 1; }
         .meta h3 { margin: 0; font-size: 16px; }
-        .meta p, .meta div.small { margin: 6px 0 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+        /* Note: .meta p and .meta div.small are now covered by the more general .panel rule above */
         .small { font-size: 13px; color: var(--muted); }
         .history { display: grid; gap: 8px; max-height: 420px; overflow-y: auto; padding-right: 8px; }
         .hist-item { padding: 10px; border-radius: 8px; background: var(--card-2-bg); font-size: 13px; cursor: pointer; }
@@ -384,7 +389,6 @@ const render = {
 // 5. HISTORY MANAGEMENT
 // =================================================================================
 function saveHistory() {
-    // BUG FIX: Wrap localStorage in try/catch to prevent crashes in private mode
     try {
         localStorage.setItem('va_history', JSON.stringify(appState.history));
     } catch (e) {
@@ -438,11 +442,9 @@ const commands = [
     { regex: /quote/i, handler: async () => { const data = await api.getQuote(); const quoteText = `${data.quote} — ${data.author || 'Unknown'}`; UI.output.innerHTML = render.card('💡 Quote', escapeHtml(quoteText)); speak(`${data.quote} by ${data.author || 'an unknown author'}.`); return { summary: 'Shared a quote' }; } }
 ];
 
-// UX IMPROVEMENT: This function is now enhanced to manage button states.
 async function handleCommand(raw) {
     if (!raw) return;
     
-    // UX IMPROVEMENT: Disable buttons and show processing state to prevent multiple commands.
     UI.runBtn.disabled = true;
     UI.speakBtn.disabled = true;
     UI.speakBtn.innerHTML = `<span class="mic-icon">Processing...</span>`;
@@ -466,7 +468,6 @@ async function handleCommand(raw) {
         UI.output.innerHTML = render.error(err.message || String(err));
         speak("An error occurred. Please try again.");
     } finally {
-        // UX IMPROVEMENT: Re-enable buttons after command is finished, in all cases.
         UI.runBtn.disabled = false;
         if (SpeechRecognition) {
             UI.speakBtn.disabled = false;
@@ -492,7 +493,6 @@ function init() {
     UI.themeBtn.onclick = () => {
         const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        // BUG FIX: Wrap localStorage in try/catch
         try {
             localStorage.setItem('theme', newTheme);
         } catch (e) {
@@ -510,7 +510,6 @@ function init() {
     updateTtsUI();
     UI.ttsBtn.onclick = () => {
         appState.ttsEnabled = !appState.ttsEnabled;
-        // BUG FIX: Wrap localStorage in try/catch
         try {
             localStorage.setItem('va_ttsEnabled', appState.ttsEnabled);
         } catch (e) {
@@ -528,7 +527,6 @@ function init() {
     UI.historyDiv.addEventListener('click', e => {
         const item = e.target.closest('.hist-item');
         if (item && item.dataset.command) {
-            // UX IMPROVEMENT: Update input field when clicking history.
             UI.textInput.value = item.dataset.command;
             handleCommand(item.dataset.command);
         }
@@ -559,7 +557,6 @@ function init() {
         recognition.continuous = false;
         recognition.interimResults = false;
         recognition.onstart = () => { appState.isListening = true; UI.speakBtn.classList.add('listening'); UI.speakBtn.innerHTML = `<span class="mic-icon">Listening...</span>`; };
-        // UX IMPROVEMENT: 'onend' is simplified as handleCommand now manages the button state.
         recognition.onend = () => { 
             appState.isListening = false; 
             UI.speakBtn.classList.remove('listening'); 
@@ -617,4 +614,3 @@ function init() {
 init();
 </script>
 </body>
-</html>
