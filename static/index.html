@@ -120,7 +120,6 @@
             border: 1px solid rgba(255,255,255,0.2); 
             min-width: 240px; 
             background: rgba(0,0,0,0.2); 
-            /* FINAL FIX: Added !important to force the correct text color on all mobile browsers */
             color: var(--text) !important;
             font-family: var(--font-family); 
             font-size: 14px;
@@ -415,16 +414,25 @@ function renderHistory() {
 // =================================================================================
 const commands = [
     { regex: /^(hello|hi|hey)$/i, handler: async () => { const response = "Hello! How can I assist you today?"; UI.output.innerHTML = render.card("Greeting", response); speak(response); return { summary: "Greeting" }; } },
-    { regex: /^(help|commands|what can you do)$/i, handler: async () => { const helpText = `<ul><li><b>news</b> - Get the latest news headlines.</li><li><b>weather in [city]</b> - Get the weather for a city.</li><li><b>what is/who is [topic]</b> - Search Wikipedia.</li><li><b>play [song/video]</b> - Play a video on YouTube.</li><li><b>open youtube</b> - Opens YouTube.</li><li><b>google/search [query]</b> - Perform a Google search.</li><li><b>time/date</b> - Get the current time or date.</li><li><b>joke/quote</b> - Get a random joke or quote.</li></ul>`; UI.output.innerHTML = render.card("Available Commands", helpText); speak("Here are some of the things I can do."); return { summary: "Displayed help" }; } },
+    // VOICE FIX: Regex now allows for optional punctuation at the end.
+    { regex: /^(help|commands|what can you do)[.?]?$/i, handler: async () => { const helpText = `<ul><li><b>news</b> - Get the latest news headlines.</li><li><b>weather in [city]</b> - Get the weather for a city.</li><li><b>what is/who is [topic]</b> - Search Wikipedia.</li><li><b>play [song/video]</b> - Play a video on YouTube.</li><li><b>open youtube</b> - Opens YouTube.</li><li><b>google/search [query]</b> - Perform a Google search.</li><li><b>time/date</b> - Get the current time or date.</li><li><b>joke/quote</b> - Get a random joke or quote.</li></ul>`; UI.output.innerHTML = render.card("Available Commands", helpText); speak("Here are some of the things I can do."); return { summary: "Displayed help" }; } },
     { regex: /time/i, handler: async () => { const t = new Date().toLocaleTimeString(); UI.output.innerHTML = render.card('Time', t); speak(`The time is ${t}`); return { summary: `Time: ${t}` }; } },
     { regex: /date/i, handler: async () => { const d = new Date().toLocaleDateString(); UI.output.innerHTML = render.card('Date', d); speak(`Today's date is ${d}`); return { summary: `Date: ${d}` }; } },
     { regex: /news/i, handler: async () => { const data = await api.getNews(); if (data.news?.length) { UI.output.innerHTML = render.news(data.news); speak('Here are the latest news headlines.'); return { summary: 'Fetched news' }; } else { throw new Error("No news available at the moment."); } } },
-    { regex: /weather in (.+)/i, handler: async (matches) => { const city = matches[1]; const data = await api.getWeather(city); if (data.main && data.weather?.[0]) { const temp = (data.main.temp - 273.15).toFixed(1); const desc = data.weather[0].description; UI.output.innerHTML = render.weather(data, city); speak(`The temperature in ${city} is ${temp} degrees with ${desc}`); return { summary: `${temp}°C ${desc}` }; } else { throw new Error(`Could not find weather for ${city}.`); } } },
-    { regex: /^(?:what is|who is|wikipedia|search for) (.+)/i, handler: async (matches) => { const query = matches[1]; const data = await api.getWikipedia(query); if (data.result) { UI.output.innerHTML = render.wikipedia(data.result); speak(data.result.extract || `Showing Wikipedia summary for ${data.result.title}`); return { summary: `Wiki: ${data.result.title}` }; } else { throw new Error(data.error || `No Wikipedia result found for ${query}.`); } } },
+    { regex: /weather in (.+)/i, handler: async (matches) => { 
+        // VOICE FIX: Clean up the captured query to remove punctuation.
+        const city = matches[1].trim().replace(/[.?]$/, '');
+        const data = await api.getWeather(city); 
+        if (data.main && data.weather?.[0]) { const temp = (data.main.temp - 273.15).toFixed(1); const desc = data.weather[0].description; UI.output.innerHTML = render.weather(data, city); speak(`The temperature in ${city} is ${temp} degrees with ${desc}`); return { summary: `${temp}°C ${desc}` }; } else { throw new Error(`Could not find weather for ${city}.`); } } },
+    { regex: /^(?:what is|who is|wikipedia|search for) (.+)/i, handler: async (matches) => { 
+        // VOICE FIX: Clean up the captured query.
+        const query = matches[1].trim().replace(/[.?]$/, '');
+        const data = await api.getWikipedia(query); if (data.result) { UI.output.innerHTML = render.wikipedia(data.result); speak(data.result.extract || `Showing Wikipedia summary for ${data.result.title}`); return { summary: `Wiki: ${data.result.title}` }; } else { throw new Error(data.error || `No Wikipedia result found for ${query}.`); } } },
     { 
         regex: /^play (.+?)(?: on youtube)?$/i,
         handler: async (matches) => {
-            const query = matches[1].trim();
+            // VOICE FIX: Clean up the captured query.
+            const query = matches[1].trim().replace(/[.?]$/, '');
             const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
             UI.output.innerHTML = render.card('YouTube', `Searching for "${escapeHtml(query)}" on YouTube... <a href="${url}" class="link" target="_blank">Click here if it doesn't open</a>`);
             window.open(url, '_blank');
@@ -442,7 +450,12 @@ const commands = [
             return { summary: "Opened YouTube" };
         }
     },
-    { regex: /^(?:google|search) (.+)/i, handler: async (matches) => { const query = matches[1]; UI.output.innerHTML = render.card('Google Search', `Searching for "${escapeHtml(query)}" on your machine...`); await api.searchGoogle(query); speak(`Launching Google search for ${query}.`); return { summary: `Googled: ${query}` }; } },
+    { regex: /^(?:google|search) (.+)/i, handler: async (matches) => { 
+        // VOICE FIX: Clean up the captured query.
+        const query = matches[1].trim().replace(/[.?]$/, '');
+        UI.output.innerHTML = render.card('Google Search', `Searching for "${escapeHtml(query)}" on your machine...`); 
+        await api.searchGoogle(query); speak(`Launching Google search for ${query}.`); 
+        return { summary: `Googled: ${query}` }; } },
     { regex: /joke/i, handler: async () => { const data = await api.getJoke(); UI.output.innerHTML = render.card('😂 Joke', escapeHtml(data.joke)); speak(data.joke); return { summary: 'Told a joke' }; } },
     { regex: /quote/i, handler: async () => { const data = await api.getQuote(); const quoteText = `${data.quote} — ${data.author || 'Unknown'}`; UI.output.innerHTML = render.card('💡 Quote', escapeHtml(quoteText)); speak(`${data.quote} by ${data.author || 'an unknown author'}.`); return { summary: 'Shared a quote' }; } }
 ];
