@@ -115,8 +115,15 @@
         input[type="text"] {
             -webkit-appearance: none;
             appearance: none;
-            padding: 10px 32px 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); min-width: 240px; background: rgba(0,0,0,0.2); color: var(--text);
-            font-family: var(--font-family); font-size: 14px;
+            padding: 10px 32px 10px 12px; 
+            border-radius: 10px; 
+            border: 1px solid rgba(255,255,255,0.2); 
+            min-width: 240px; 
+            background: rgba(0,0,0,0.2); 
+            /* FINAL FIX: Added !important to force the correct text color on all mobile browsers */
+            color: var(--text) !important;
+            font-family: var(--font-family); 
+            font-size: 14px;
         }
         .clear-btn {
             position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 22px; padding: 0 8px; line-height: 1;
@@ -154,7 +161,6 @@
         #youSaid { font-size: 14px; color: var(--muted); margin-bottom: 16px; min-height: 20px;}
         #output { display: grid; gap: 16px; }
         
-        /* --- FIX: Ensures text in results is visible on mobile dark mode --- */
         .panel p, .panel div, .panel li, .panel strong, .panel b, .panel ul {
             color: var(--text);
         }
@@ -174,7 +180,6 @@
         .thumb { width: 120px; height: 80px; object-fit: cover; border-radius: 8px; background: #0f1724; flex-shrink: 0; }
         .meta { flex: 1; }
         .meta h3 { margin: 0; font-size: 16px; }
-        /* Note: .meta p and .meta div.small are now covered by the more general .panel rule above */
         .small { font-size: 13px; color: var(--muted); }
         .history { display: grid; gap: 8px; max-height: 420px; overflow-y: auto; padding-right: 8px; }
         .hist-item { padding: 10px; border-radius: 8px; background: var(--card-2-bg); font-size: 13px; cursor: pointer; }
@@ -614,3 +619,4 @@ function init() {
 init();
 </script>
 </body>
+</html>
