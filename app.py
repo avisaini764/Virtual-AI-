@@ -131,10 +131,14 @@ def ask_gemini():
     if not model:
         return jsonify({"error": "AI model is not configured. Check API key."}), 500
         
-    data = request.get_json()
-    prompt = data.get('prompt')
-    user_id = data.get('user_id')
-
+    # FIX: Get all data from the request before starting the stream
+    try:
+        data = request.get_json()
+        prompt = data.get('prompt')
+        user_id = data.get('user_id')
+    except Exception as e:
+        return jsonify({"error": f"Invalid JSON in request: {e}"}), 400
+        
     if not prompt:
         return jsonify({"error": "No prompt provided"}), 400
 
@@ -146,28 +150,32 @@ def ask_gemini():
             if chunk.text:
                 full_response += chunk.text
                 yield chunk.text
-                
-    if user_id and user_id is not None:
-        user = User.query.get(user_id)
-        if user:
-            # Save query to database before streaming response
-            new_conversation = Conversation(user_id=user.id, query=prompt, response="")
-            db.session.add(new_conversation)
-            db.session.commit()
-            
-            # Stream the response and update the conversation entry
-            stream_gen = stream_response()
-            for chunk in stream_gen:
-                yield chunk
 
-            new_conversation.response = full_response
-            db.session.commit()
+    try:
+        # Check if the user is logged in and save the conversation
+        if user_id and user_id is not None:
+            user = User.query.get(user_id)
+            if user:
+                new_conversation = Conversation(user_id=user.id, query=prompt, response="")
+                db.session.add(new_conversation)
+                db.session.commit()
+
+                # Stream the response and update the conversation entry
+                response_generator = stream_response()
+                for chunk in response_generator:
+                    yield chunk
+
+                new_conversation.response = full_response
+                db.session.commit()
+            else:
+                return jsonify({"error": "User not found"}), 404
         else:
-            return jsonify({"error": "User not found"}), 404
-    else:
-        return Response(stream_response(), mimetype='text/plain')
-        
-    
+            return Response(stream_response(), mimetype='text/plain')
+            
+    except Exception as e:
+        print(f"Error with Gemini API or database interaction: {e}")
+        return jsonify({"error": f"An error occurred with the AI service: {e}"}), 500
+
 @app.route('/get_conversations')
 @login_required
 def get_conversations():
