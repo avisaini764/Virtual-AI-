@@ -1,13 +1,15 @@
 import os
 import requests
-# IMPORTANT: Add send_from_directory to the imports
-from flask import Flask, jsonify, request, Response, send_from_directory
+# No need for send_from_directory anymore, Flask handles it
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 from dotenv import load_dotenv
 import google.generativeai as genai
 
 # --- 1. SETUP ---
-app = Flask(__name__)
+# IMPORTANT: This tells Flask where to find your frontend files
+app = Flask(__name__, static_folder='static', static_url_path='')
+
 CORS(app) 
 load_dotenv()
 
@@ -27,18 +29,13 @@ except Exception as e:
     model = None
 
 # ==============================================================================
-# --- 2. SERVE THE FRONTEND (NEW SECTION) ---
-# This is the new code that fixes the "Not Found" error.
+# --- 2. SERVE THE FRONTEND (CORRECTED) ---
+# This single route now handles serving index.html for the main URL.
+# Flask will automatically serve other files like title.png from the 'static' folder.
 # ==============================================================================
 @app.route('/')
 def serve_index():
-    """Serves the main index.html file."""
-    return send_from_directory('.', 'index.html')
-
-@app.route('/<path:path>')
-def serve_static_files(path):
-    """Serves other static files like title.png."""
-    return send_from_directory('.', path)
+    return app.send_static_file('index.html')
 # ==============================================================================
 
 
@@ -67,13 +64,10 @@ def ask_gemini():
         print(f"Error with Gemini API stream: {e}")
         return jsonify({"error": f"An error occurred with the AI service: {e}"}), 500
 
-# --- 4. OTHER API ROUTES ---
-# (The rest of your API routes like get_news, get_weather, etc. remain unchanged)
-
+# --- 4. OTHER API ROUTES (No changes here) ---
 @app.route('/get_news')
 def get_news():
-    if not NEWS_API_KEY:
-        return jsonify({"error": "News API key is missing."}), 500
+    if not NEWS_API_KEY: return jsonify({"error": "News API key is missing."}), 500
     url = f"https://newsapi.org/v2/top-headlines?country=in&apiKey={NEWS_API_KEY}"
     try:
         response = requests.get(url)
@@ -86,11 +80,9 @@ def get_news():
 
 @app.route('/get_weather')
 def get_weather():
-    if not WEATHER_API_KEY:
-        return jsonify({"error": "Weather API key is missing."}), 500
+    if not WEATHER_API_KEY: return jsonify({"error": "Weather API key is missing."}), 500
     city = request.args.get('city')
-    if not city:
-        return jsonify({"error": "City parameter is missing"}), 400
+    if not city: return jsonify({"error": "City parameter is missing"}), 400
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}"
     try:
         response = requests.get(url)
