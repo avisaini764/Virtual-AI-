@@ -1,12 +1,13 @@
 import os
 import requests
-from flask import Flask, jsonify, request, Response, session, redirect, url_for
+from flask import Flask, jsonify, request, Response, redirect, url_for, render_template_string
 from flask_cors import CORS
 from dotenv import load_dotenv
 import google.generativeai as genai
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
+from sqlalchemy.orm import Mapped, mapped_column
 
 # --- 1. SETUP ---
 app = Flask(__name__)
@@ -22,7 +23,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login' # Name of the login route function
+login_manager.login_view = 'login_page' # FIX: Point to the new GET login route
 
 # --- FINAL FIX: Explicit CORS with credentials support ---
 CORS(app, supports_credentials=True)
@@ -45,12 +46,12 @@ except Exception as e:
 # --- DATABASE MODELS ---
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(db.String(80), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(db.String(128), nullable=False)
     conversations = db.relationship('Conversation', backref='user', lazy=True)
 
     def set_password(self, password):
@@ -60,11 +61,11 @@ class User(db.Model, UserMixin):
         return bcrypt.check_password_hash(self.password_hash, password)
     
 class Conversation(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    query = db.Column(db.Text, nullable=False)
-    response = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    query: Mapped[str] = mapped_column(db.Text, nullable=False)
+    response: Mapped[str] = mapped_column(db.Text, nullable=False)
+    timestamp: Mapped[db.DateTime] = mapped_column(db.DateTime, default=db.func.current_timestamp())
 
 # Create the database tables
 with app.app_context():
@@ -73,6 +74,26 @@ with app.app_context():
 # ==============================================================================
 # --- 2. AUTHENTICATION ROUTES ---
 # ==============================================================================
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    user = db.session.scalar(db.select(User).filter_by(username=username))
+
+    if user and user.check_password(password):
+        login_user(user)
+        return jsonify({"message": "Logged in successfully", "user_id": user.id}), 200
+    else:
+        return jsonify({"error": "Invalid username or password"}), 401
+    
+@app.route('/login_page', methods=['GET'])
+def login_page():
+    # This route is needed for Flask-Login's redirect to work correctly.
+    # It doesn't need to render anything if the frontend handles the UI.
+    return jsonify({"message": "Please log in"}), 401
+
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -82,7 +103,7 @@ def register():
     if not username or not password:
         return jsonify({"error": "Username and password are required"}), 400
 
-    existing_user = User.query.filter_by(username=username).first()
+    existing_user = db.session.scalar(db.select(User).filter_by(username=username))
     if existing_user:
         return jsonify({"error": "Username already exists"}), 409
 
@@ -92,20 +113,6 @@ def register():
     db.session.commit()
     
     return jsonify({"message": "User registered successfully", "user_id": new_user.id}), 201
-
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-
-    user = User.query.filter_by(username=username).first()
-
-    if user and user.check_password(password):
-        login_user(user)
-        return jsonify({"message": "Logged in successfully", "user_id": user.id}), 200
-    else:
-        return jsonify({"error": "Invalid username or password"}), 401
 
 @app.route('/logout')
 @login_required
@@ -131,7 +138,6 @@ def ask_gemini():
     if not model:
         return jsonify({"error": "AI model is not configured. Check API key."}), 500
         
-    # FIX: Get all data from the request before starting the stream
     try:
         data = request.get_json()
         prompt = data.get('prompt')
@@ -154,7 +160,7 @@ def ask_gemini():
     try:
         # Check if the user is logged in and save the conversation
         if user_id and user_id is not None:
-            user = User.query.get(user_id)
+            user = db.session.get(User, user_id)
             if user:
                 new_conversation = Conversation(user_id=user.id, query=prompt, response="")
                 db.session.add(new_conversation)
@@ -165,8 +171,9 @@ def ask_gemini():
                 for chunk in response_generator:
                     yield chunk
 
-                new_conversation.response = full_response
-                db.session.commit()
+                with app.app_context():
+                    new_conversation.response = full_response
+                    db.session.commit()
             else:
                 return jsonify({"error": "User not found"}), 404
         else:
@@ -179,12 +186,11 @@ def ask_gemini():
 @app.route('/get_conversations')
 @login_required
 def get_conversations():
-    conversations = Conversation.query.filter_by(user_id=current_user.id).order_by(Conversation.timestamp).all()
+    conversations = db.session.scalars(db.select(Conversation).filter_by(user_id=current_user.id).order_by(Conversation.timestamp)).all()
     conversation_list = [{"query": c.query, "response": c.response} for c in conversations]
     return jsonify(conversation_list)
 
-# --- 4. OTHER API ROUTES (No changes here, except for potential login_required decorators) ---
-# For now, we won't add @login_required to these, so they can still be used without an account.
+# --- 4. OTHER API ROUTES (No changes here) ---
 @app.route('/get_news')
 def get_news():
     if not NEWS_API_KEY: return jsonify({"error": "News API key is missing."}), 500
@@ -244,6 +250,4 @@ def get_quote():
     return jsonify({"quote":data.get('content'),"author":data.get('author')})
 
 if __name__ == '__main__':
-    # When deploying to Render, you'll need to remove the debug=True and port=5000 arguments
-    # and use the default behavior for the production server.
     app.run(debug=True, port=5000)
