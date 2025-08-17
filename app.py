@@ -1,6 +1,6 @@
 import os
 import requests
-from flask import Flask, jsonify, request, Response, redirect, url_for, render_template_string
+from flask import Flask, jsonify, request, Response, redirect, url_for
 from flask_cors import CORS
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -8,6 +8,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from sqlalchemy.orm import Mapped, mapped_column
+import json
 
 # --- 1. SETUP ---
 app = Flask(__name__)
@@ -143,7 +144,8 @@ def ask_gemini():
         prompt = data.get('prompt')
         user_id = data.get('user_id')
     except Exception as e:
-        return jsonify({"error": f"Invalid JSON in request: {e}"}), 400
+        # FIX: Return a simple Response object instead of jsonify to avoid context issues
+        return Response(json.dumps({"error": f"Invalid JSON in request: {str(e)}"}), mimetype='application/json', status=400)
         
     if not prompt:
         return jsonify({"error": "No prompt provided"}), 400
