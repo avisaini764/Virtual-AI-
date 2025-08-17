@@ -24,9 +24,8 @@ bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login' # Name of the login route function
 
-# --- FIX: Explicitly set CORS for routes ---
-# This resolves the 405 error on some platforms like Render
-CORS(app)
+# --- FIX: Explicitly set CORS for all API routes ---
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # --- API KEY CONFIGURATION ---
 NEWS_API_KEY = os.getenv("NEWS_API_KEY")
