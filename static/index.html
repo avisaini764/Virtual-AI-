@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -358,5 +358,532 @@
     }
     init();
 </script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>evoAI – Virtual Voice Assistant</title>
+    <link rel="icon" type="image/png" href="/static/title.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg-gradient-start:#0D1117;--bg-gradient-end:#010409;--chat-bg:#161B22;--panel-bg:rgba(30,39,66,0.2);--input-bg:#0D1117;--text:#e6edf3;--muted:#848d97;--accent:#58a6ff;--accent-rgb:88,166,255;--border-color:#30363d;--shadow-color:rgba(0,0,0,0.5);--font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji"}
+        html[data-theme="light"]{--bg-gradient-start:#f0f2f5;--bg-gradient-end:#ffffff;--chat-bg:#ffffff;--panel-bg:rgba(255,255,255,0.8);--input-bg:#f6f8fa;--text:#24292f;--muted:#57606a;--border-color:#d0d7de;--shadow-color:rgba(90,90,90,0.2)}
+        *{box-sizing:border-box}
+        html,body{height:100%}
+        body{margin:0;font-family:var(--font-family);background:linear-gradient(150deg,var(--bg-gradient-start),var(--bg-gradient-end));color:var(--text);-webkit-font-smoothing:antialiased;overflow:hidden}
+        .chat-app{display:flex;flex-direction:column;height:100vh;width:100%;max-width:1000px;margin:0 auto;background-color:var(--chat-bg);border-left:1px solid var(--border-color);border-right:1px solid var(--border-color)}
+        header{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:1px solid var(--border-color);flex-shrink:0;box-shadow:0 2px 4px rgba(0,0,0,0.1);z-index:10}
+        .brand{display:flex;align-items:center;gap:16px;cursor:pointer}
+        .logo{width:48px;height:48px;flex-shrink:0;position:relative;overflow:hidden}
+        .logo img{width:100%;height:100%;object-fit:contain;border-radius:8px}
+        @keyframes shine{0%{left:-150%}100%{left:150%}}
+        .logo::before{content:'';position:absolute;top:0;width:75%;height:100%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,0.3) 50%,rgba(255,255,255,0) 100%);transform:skewX(-25deg);animation:shine 4s infinite linear}
+        .brand-text{display:flex;flex-direction:column}
+        .brand-main{display:flex;align-items:center;gap:10px}
+        h1{margin:0;font-size:18px;font-weight:600;color:var(--text);line-height:1.2}
+        .tagline{font-size:16px;color:var(--muted);font-weight:400;white-space:nowrap}
+        .dev-credit{font-size:11px;color:var(--muted);opacity:.7;margin-top:4px}
+        .header-actions{display:flex;gap:8px}
+        .chat-input-area{flex-shrink:0;padding:16px 24px;border-bottom:1px solid var(--border-color);box-shadow:0 2px 4px rgba(0,0,0,0.1);z-index:5}
+        main{flex-grow:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:32px;scroll-behavior:smooth}
+        main::-webkit-scrollbar{width:6px}
+        main::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:3px}
+        .chat-bubble{display:flex;gap:16px;max-width:100%;width:100%;animation:popIn .3s ease;align-self:flex-start}
+        @keyframes popIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+        .bubble-icon{flex-shrink:0;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--input-bg);border:1px solid var(--border-color)}
+        .bubble-icon svg{width:18px;height:18px;color:var(--muted)}
+        .bubble-content{padding:2px 0;line-height:1.6;flex-grow:1}
+        .chat-bubble.user .bubble-content{background-color:transparent;font-weight:500;font-size:16px}
+        .chat-bubble.user .bubble-icon{border-color:var(--accent)}
+        .chat-bubble.assistant .bubble-content{background-color:transparent}
+        .chat-bubble h3{margin:0 0 8px 0;font-size:16px;font-weight:600}
+        .chat-bubble .small{font-size:15px;color:var(--text);line-height:1.6}
+        .chat-bubble .small strong{color:var(--text)}
+        .chat-bubble a.link{color:var(--accent);text-decoration:none;font-weight:500;border-bottom:1px solid transparent;transition:border-color .2s ease}
+        .chat-bubble a.link:hover{border-color:var(--accent)}
+        .chat-bubble .thumb{width:100%;max-width:240px;height:auto;object-fit:cover;border-radius:8px;margin-top:12px}
+        .chat-bubble pre{background-color:rgba(0,0,0,0.3);padding:16px;margin:12px 0 0 0;border-radius:8px;overflow-x:auto;font-family:monospace;font-size:14px;border:1px solid var(--border-color)}
+        html[data-theme="light"] .chat-bubble pre{background-color:rgba(0,0,0,0.03);color:#000;border:1px solid var(--border-color)}
+        .chat-bubble code{font-family:monospace;background-color:rgba(135,131,120,0.15);padding:1px 5px;border-radius:4px}
+        .chat-bubble pre code{background:none;padding:0;border-radius:0}
+        .loader-bubble .bubble-content{padding:12px}
+        .loader{width:28px;height:28px;border:3px solid var(--border-color);border-top-color:var(--accent);border-radius:50%;display:inline-block;animation:rotation .8s linear infinite}
+        @keyframes rotation{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+        .input-wrapper{display:flex;align-items:flex-end;gap:8px;background-color:var(--input-bg);border-radius:12px;padding:8px;border:1px solid var(--border-color);transition:box-shadow .2s ease,border-color .2s ease}
+        .input-wrapper:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),0.3)}
+        textarea#textInput{width:100%;flex-grow:1;background:transparent;border:none;outline:none;resize:none;color:var(--text);font-family:var(--font-family);font-size:16px;line-height:1.5;max-height:150px;padding:8px;transition:height .2s ease}
+        textarea#textInput::-webkit-scrollbar{width:4px}
+        textarea#textInput::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:2px}
+        button{padding:8px;border-radius:8px;cursor:pointer;background:transparent;color:var(--muted);border:none;display:flex;align-items:center;justify-content:center;transition:background-color .2s ease,color .2s ease}
+        button:hover:not(:disabled){background-color:rgba(135,131,120,0.15);color:var(--text)}
+        button:disabled{cursor:not-allowed;opacity:.5}
+        button svg{width:24px;height:24px}
+        button#speakBtn{background-color:var(--input-bg);border:1px solid var(--border-color)}
+        button#speakBtn:hover:not(:disabled){background-color:rgba(135,131,120,0.15);color:var(--text)}
+        button.send-btn{background-color:var(--accent);color:#fff}
+        button.send-btn:hover:not(:disabled){background-color:rgba(var(--accent-rgb),.85)}
+        button.listening{color:var(--accent)}
+        button.listening .mic-icon{animation:pulse 1.5s infinite ease-in-out}
+        @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+        @media(max-width:768px){body{overflow:hidden}.chat-app{border:none;height:100vh}header{padding:12px 16px}.tagline{display:none}main{padding:16px;gap:24px;flex-grow:1}.chat-input-area{padding:8px 16px 16px;position:relative;bottom:auto;background-color:var(--chat-bg);border-top:none;border-bottom:1px solid var(--border-color)}.chat-bubble{max-width:95%}}
+        .modal{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}
+        .modal.active{opacity:1;visibility:visible}
+        .modal-content{background-color:var(--chat-bg);padding:32px;border-radius:12px;width:90%;max-width:400px;border:1px solid var(--border-color);box-shadow:0 4px 20px var(--shadow-color);position:relative;transform:translateY(-20px);transition:transform .3s ease-out}
+        .modal.active .modal-content{transform:translateY(0)}
+        .modal-content h2{margin-top:0;font-size:24px;text-align:center;font-weight:600}
+        .modal-content form{display:flex;flex-direction:column;gap:16px}
+        .modal-content input[type="text"],.modal-content input[type="password"]{padding:12px;border-radius:8px;border:1px solid var(--border-color);background-color:var(--input-bg);color:var(--text);font-size:16px}
+        .modal-content input::placeholder{color:var(--muted)}
+        .modal-content button[type="submit"]{padding:12px;border-radius:8px;border:none;background-color:var(--accent);color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:background-color .2s}
+        .modal-content button[type="submit"]:hover{background-color:rgba(var(--accent-rgb),.85)}
+        .modal-footer{text-align:center;margin-top:20px;font-size:14px}
+        .modal-footer a{color:var(--accent);cursor:pointer;text-decoration:none}
+        .close-btn{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer}
+    </style>
+</head>
+<body>
+    <div class="chat-app">
+        <header>
+            <div class="brand">
+                <div class="logo">
+                    <img src="/static/title.png" alt="evoAI Logo">
+                </div>
+                <div class="brand-text">
+                    <div class="brand-main">
+                        <h1>evoAI</h1>
+                        <div class="tagline">evolution + intelligence</div>
+                    </div>
+                    <div class="dev-credit">Developed by AVI SAINI</div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <span id="user-info" style="margin-right:8px;font-weight:500;display:none;"></span>
+                <button id="authBtn" title="Sign In">Sign In</button>
+                <button id="clearHistoryBtn" title="Clear History">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                </button>
+                <button id="ttsBtn" title="Toggle Text-to-Speech">🔊</button>
+                <button id="themeBtn" title="Toggle Theme">☀️</button>
+            </div>
+        </header>
+        <div class="chat-input-area">
+            <div class="input-wrapper">
+                <button id="speakBtn" title="Speak command">
+                    <svg class="mic-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m12 0v-1.5a6 6 0 00-12 0v1.5m6 7.5a6 6 0 00-6-6" /></svg>
+                </button>
+                <textarea id="textInput" placeholder="Ask evoAI anything..." rows="1"></textarea>
+                <button id="runBtn" class="send-btn" title="Send message">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg>
+                </button>
+            </div>
+        </div>
+        <main id="chat-output"></main>
+    </div>
+
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="UI.authModal.classList.remove('active')">&times;</button>
+            <h2 id="modal-title">Sign In</h2>
+            <form id="authForm">
+                <input type="text" id="username" name="username" placeholder="Username" required>
+                <input type="password" id="password" name="password" placeholder="Password" required>
+                <button type="submit" id="authSubmitBtn">Sign In</button>
+            </form>
+            <div class="modal-footer">
+                <span id="modal-link-text">Don't have an account? <a href="#" id="toggle-link">Sign Up</a></span>
+            </div>
+        </div>
+    </div>
+
+    <svg width="0" height="0" style="display:none;"><defs>
+        <symbol id="icon-user" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+        <symbol id="icon-assistant" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.572L16.5 21.75l-.398-1.178a3.375 3.375 0 00-2.455-2.456L12.75 18l1.178-.398a3.375 3.375 0 002.455-2.456L16.5 14.25l.398 1.178a3.375 3.375 0 002.456 2.456L20.25 18l-1.178.398a3.375 3.375 0 00-2.456 2.456z" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+    </defs></svg>
+
+    <script>
+        const UI = {
+            output: document.getElementById('chat-output'),
+            runBtn: document.getElementById('runBtn'),
+            speakBtn: document.getElementById('speakBtn'),
+            textInput: document.getElementById('textInput'),
+            themeBtn: document.getElementById('themeBtn'),
+            ttsBtn: document.getElementById('ttsBtn'),
+            clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+            authBtn: document.getElementById('authBtn'),
+            authModal: document.getElementById('authModal'),
+            authForm: document.getElementById('authForm'),
+            modalTitle: document.getElementById('modal-title'),
+            authSubmitBtn: document.getElementById('authSubmitBtn'),
+            modalLinkText: document.getElementById('modal-link-text'),
+            toggleLink: document.getElementById('toggle-link'),
+            userInfo: document.getElementById('user-info')
+        };
+        const appState = {
+            isListening: false,
+            ttsEnabled: JSON.parse(localStorage.getItem('va_ttsEnabled') || 'true'),
+            isLoggedIn: false,
+            userId: null,
+            username: null
+        };
+        let authMode = 'login';
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+
+        const API_BASE_URL = 'https://ai-assistant-dfbj.onrender.com';
+        
+        // Helper Functions
+        const escapeHtml = s => s?.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") ?? "";
+
+        function simpleMarkdownToHtml(text) {
+            let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>');
+            html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+                const escapedCode = escapeHtml(code).trim();
+                return `<pre><code class="language-${lang}">${escapedCode}</code></pre>`;
+            });
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+            html = html.replace(/^\s*\*\s+(.*)/gm, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+            html = html.replace(/<\/ul>\s*<ul>/g, '');
+            return html.replace(/\n/g, '<br>');
+        }
+
+        function speak(text) {
+            if (!appState.ttsEnabled || !window.speechSynthesis) return;
+            speechSynthesis.cancel();
+            const plainText = text.replace(/<[^>]*>/g, '').replace(/```[\s\S]*?```/g, '');
+            const utterance = new SpeechSynthesisUtterance(plainText);
+            utterance.lang = 'en-US';
+            speechSynthesis.speak(utterance);
+        }
+
+        function getFirstSentence(text) {
+            if (!text) return '';
+            const plainText = text.replace(/<[^>]*>/g, '').replace(/```[\s\S]*?```/g, '');
+            const match = plainText.match(/^.*?[.!?](?:\s|$)/);
+            return match ? match[0] : plainText.substring(0, 200);
+        }
+
+        function appendBubble(content, type = 'assistant') {
+            const bubble = document.createElement('div');
+            bubble.classList.add('chat-bubble', type);
+            const icon = type === 'user' ? '#icon-user' : '#icon-assistant';
+            bubble.innerHTML = `<div class="bubble-icon"><svg fill="none" viewBox="0 0 24 24"><use href="${icon}"></use></svg></div><div class="bubble-content">${content}</div>`;
+            UI.output.appendChild(bubble);
+            UI.output.scrollTop = UI.output.scrollHeight;
+            return bubble.querySelector('.bubble-content');
+        }
+
+        function removeWelcomeMessage() {
+            const firstBubble = UI.output.querySelector('.chat-bubble');
+            if (firstBubble && firstBubble.textContent.includes('Welcome to evoAI!')) {
+                firstBubble.remove();
+            }
+        }
+         
+        function renderWelcomeMessage() {
+            const welcomeTitle = appState.isLoggedIn ? `Welcome back, ${appState.username}!` : "Welcome to evoAI!";
+            const welcomeText = appState.isLoggedIn ? 
+                "Your conversation history has been loaded. How can I help you today?" :
+                "I'm your personal AI assistant. You can ask me anything, or try a command like <strong>news</strong> or <strong>weather in Mohali</strong> to get started. <br><br> To save your conversations, please <a id='signInLink' href='#'>Sign In</a>.";
+            appendBubble(render.card(welcomeTitle, welcomeText));
+            if (!appState.isLoggedIn) {
+                document.getElementById('signInLink').onclick = (e) => { e.preventDefault(); UI.authModal.classList.add('active'); };
+            }
+        }
+
+        // API Request Function
+        const api = {
+            async request(path, options = {}) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}${path}`, options);
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ error: `${response.status} ${response.statusText}` }));
+                        throw new Error(errorData.error);
+                    }
+                    return response;
+                } catch (err) {
+                    if (err instanceof TypeError) {
+                        throw new Error("Could not connect to the backend server. Is it running?");
+                    }
+                    throw err;
+                }
+            },
+            async get(path) { return (await this.request(path)).json(); },
+            async post(path, body) {
+                return this.request(path, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+            },
+            getNews: () => api.get('/get_news'),
+            getWeather: (city) => api.get(`/get_weather?city=${encodeURIComponent(city)}`),
+            getWikipedia: (query) => api.get(`/search_wikipedia?query=${encodeURIComponent(query)}`),
+            getJoke: () => api.get('/get_joke'),
+            getQuote: () => api.get('/get_quote'),
+            askGemini: (prompt, userId) => api.post('/ask_gemini', { prompt, user_id: userId }),
+            register: (username, password) => api.post('/register', { username, password }),
+            login: (username, password) => api.post('/login', { username, password }),
+            logout: () => api.get('/logout'),
+            getConversations: () => api.get('/get_conversations')
+        };
+
+        const render = {
+            error: message => `<h3>Error</h3><p class="small">${escapeHtml(message)}</p>`,
+            card: (title, content) => `<h3>${escapeHtml(title)}</h3><div class="small">${content}</div>`,
+            news: articles => `<h3>📰 Latest News</h3>` + articles.map(n => `<div style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:12px"><div><h4>${escapeHtml(n.title || 'No title')}</h4>${n.description ? `<p class="small">${escapeHtml(n.description)}</p>` : ''}${n.source ? `<div class="small">Source: ${escapeHtml(n.source)}</div>` : ''}${n.link ? `<a class="link" href="${n.link}" target="_blank" rel="noopener noreferrer">Read More →</a>` : ''}</div>${n.image ? `<img class="thumb" src="${n.image}" alt="Article image">` : ''}</div>`).join(''),
+            weather: (data, city) => {
+                const temp = (data.main.temp - 273.15).toFixed(1);
+                const desc = data.weather[0].description || '';
+                const iconUrl = data.weather[0].icon ? `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png` : '';
+                return `<div style="display:flex;align-items:center;gap:16px">${iconUrl ? `<img style="width:60px;height:60px;" src="${iconUrl}" alt="Weather icon">` : ''}<div><h3>Weather in ${escapeHtml(city)}</h3><div class="small">Temperature: ${temp}°C, ${escapeHtml(desc)}</div></div></div>`;
+            },
+            wikipedia: r => `<h3>${escapeHtml(r.title)}</h3><p class="small">${escapeHtml(r.extract)}</p><a class="link" href="${r.url}" target="_blank" rel="noopener noreferrer">Read on Wikipedia →</a>${r.thumbnail ? `<img class="thumb" src="${r.thumbnail}" alt="Wikipedia thumbnail">` : ''}`
+        };
+
+        const commands = [
+            { regex: /^(help|commands|what can you do)[.?]?$/i, handler: async () => { const helpText = `I am a conversational AI. I also have specific commands:<ul><li><b>news</b></li><li><b>weather in [city]</b></li><li><b>what is [topic]</b> (Wikipedia)</li><li><b>play [song] on youtube</b></li><li><b>open youtube</b></li><li><b>google [query]</b></li><li><b>time / date</b></li><li><b>joke / quote</b></li></ul>`; appendBubble(render.card("Available Commands", helpText)); speak("Here are some of the things I can do."); } },
+            { regex: /^(what'?s the|what is the|current)?\s*(time|date)[.?]?$/i, handler: async () => { const now = new Date(); const t = now.toLocaleTimeString(); const d = now.toLocaleDateString(); const response = `The time is ${t} and the date is ${d}.`; appendBubble(render.card('Time & Date', response)); speak(response); } },
+            { regex: /news/i, handler: async () => { const data = await api.getNews(); appendBubble(render.news(data.news)); speak('Here are the latest news headlines.'); } },
+            { regex: /weather in (.+)/i, handler: async (matches) => { const city = matches[1].trim().replace(/[.?]$/, ''); const data = await api.getWeather(city); appendBubble(render.weather(data, city)); const temp = (data.main.temp - 273.15).toFixed(1); const desc = data.weather[0].description; speak(`The temperature in ${city} is ${temp} degrees Celsius with ${desc}.`); } },
+            { regex: /^(?:what is|who is|wikipedia|search for) (.+)/i, handler: async (matches) => { const query = matches[1].trim().replace(/[.?]$/, ''); const data = await api.getWikipedia(query); appendBubble(render.wikipedia(data.result)); speak(getFirstSentence(data.result.extract) || `Showing Wikipedia summary for ${data.result.title}`); } },
+            { regex: /^play (.+?)(?: on youtube)?$/i, handler: async (matches) => { const query = matches[1].trim().replace(/[.?]$/, ''); const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`; appendBubble(render.card('YouTube', `Searching for "${escapeHtml(query)}" on YouTube...`)); window.open(url, '_blank'); speak(`Searching for ${query} on YouTube.`); } },
+            { regex: /^open youtube$/i, handler: async () => { appendBubble(render.card('YouTube', `Opening YouTube...`)); window.open('https://www.youtube.com', '_blank'); speak("Opening YouTube."); } },
+            { regex: /^(?:google|search) (.+)/i, handler: async (matches) => { const query = matches[1].trim().replace(/[.?]$/, ''); const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`; appendBubble(render.card('Google Search', `Searching Google for "${escapeHtml(query)}"...`)); window.open(url, '_blank'); speak(`Searching Google for ${query}.`); } },
+            { regex: /joke/i, handler: async () => { const data = await api.getJoke(); appendBubble(render.card('😂 Joke', escapeHtml(data.joke))); speak(data.joke); } },
+            { regex: /quote/i, handler: async () => { const data = await api.getQuote(); const quoteText = `"${data.quote}" — ${data.author || 'Unknown'}`; appendBubble(render.card('💡 Quote', escapeHtml(quoteText))); speak(`${data.quote}... by ${data.author || 'an unknown author'}.`); } }
+        ];
+
+        async function handleCommand(raw) {
+            if (!raw) return;
+
+            removeWelcomeMessage();
+
+            UI.runBtn.disabled = true;
+            UI.speakBtn.disabled = true;
+            const cmd = raw.trim();
+            appendBubble(escapeHtml(cmd), 'user');
+
+            try {
+                for (const command of commands) {
+                    const matches = cmd.match(command.regex);
+                    if (matches) { await command.handler(matches); return; }
+                }
+
+                const response = await api.askGemini(cmd, appState.userId);
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullResponse = "";
+                const contentDiv = appendBubble('', 'assistant');
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    fullResponse += decoder.decode(value, { stream: true });
+                    contentDiv.innerHTML = render.card("evoAI", simpleMarkdownToHtml(fullResponse));
+                    UI.output.scrollTop = UI.output.scrollHeight;
+                }
+                speak(getFirstSentence(fullResponse));
+
+            } catch (err) {
+                console.error("Command Error:", err);
+                appendBubble(render.error(err.message || String(err)));
+                speak("An error occurred. " + err.message);
+            } finally {
+                UI.runBtn.disabled = false;
+                if (SpeechRecognition) { UI.speakBtn.disabled = false; }
+            }
+        }
+
+        // --- AUTHENTICATION LOGIC ---
+        async function checkSession() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/get_user_info`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.user_id) {
+                        appState.isLoggedIn = true;
+                        appState.userId = data.user_id;
+                        appState.username = data.username;
+                        updateAuthUI();
+                        loadConversations();
+                    } else {
+                        renderWelcomeMessage();
+                    }
+                }
+            } catch (error) {
+                console.error('Session check failed:', error);
+                renderWelcomeMessage();
+            }
+        }
+
+        async function loadConversations() {
+            try {
+                const conversations = await api.getConversations();
+                UI.output.innerHTML = '';
+                conversations.forEach(conv => {
+                    appendBubble(escapeHtml(conv.query), 'user');
+                    appendBubble(render.card("evoAI", simpleMarkdownToHtml(conv.response)), 'assistant');
+                });
+                if (conversations.length === 0) {
+                    renderWelcomeMessage();
+                }
+            } catch (error) {
+                console.error('Failed to load conversations:', error);
+                appendBubble(render.error("Failed to load conversation history."));
+            }
+        }
+
+        function updateAuthUI() {
+            if (appState.isLoggedIn) {
+                UI.authBtn.textContent = 'Logout';
+                UI.userInfo.style.display = 'inline-block';
+                UI.userInfo.textContent = `Hello, ${appState.username}`;
+                UI.clearHistoryBtn.disabled = false;
+            } else {
+                UI.authBtn.textContent = 'Sign In';
+                UI.userInfo.style.display = 'none';
+                UI.clearHistoryBtn.disabled = false;
+            }
+        }
+
+        function toggleAuthMode() {
+            authMode = authMode === 'login' ? 'register' : 'login';
+            if (authMode === 'login') {
+                UI.modalTitle.textContent = 'Sign In';
+                UI.authSubmitBtn.textContent = 'Sign In';
+                UI.modalLinkText.innerHTML = `Don't have an account? <a href="#" id="toggle-link">Sign Up</a>`;
+            } else {
+                UI.modalTitle.textContent = 'Sign Up';
+                UI.authSubmitBtn.textContent = 'Sign Up';
+                UI.modalLinkText.innerHTML = `Already have an account? <a href="#" id="toggle-link">Sign In</a>`;
+            }
+            // Fix for the link not working after first click
+            document.getElementById('toggle-link').addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleAuthMode();
+            }, { once: true });
+        }
+        
+        // Modal Event Listeners
+        document.getElementById('authBtn').addEventListener('click', async () => {
+            if (appState.isLoggedIn) {
+                try {
+                    const response = await api.logout();
+                    if (response.ok) {
+                        appState.isLoggedIn = false;
+                        appState.userId = null;
+                        appState.username = null;
+                        updateAuthUI();
+                        UI.output.innerHTML = '';
+                        renderWelcomeMessage();
+                        alert("Logged out successfully.");
+                    } else {
+                        alert("Logout failed. Please try again.");
+                    }
+                } catch (error) {
+                    alert("An error occurred during logout.");
+                }
+            } else {
+                UI.authModal.classList.add('active');
+                toggleAuthMode();
+            }
+        });
+
+        UI.authModal.addEventListener('click', (e) => {
+            if (e.target === UI.authModal) {
+                UI.authModal.classList.remove('active');
+            }
+        });
+
+        UI.authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = e.target.username.value;
+            const password = e.target.password.value;
+            
+            try {
+                const response = authMode === 'register' ? await api.register(username, password) : await api.login(username, password);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    UI.authModal.classList.remove('active');
+                    appState.isLoggedIn = true;
+                    appState.userId = data.user_id;
+                    appState.username = username;
+                    updateAuthUI();
+                    if (authMode === 'login') {
+                        loadConversations();
+                    } else {
+                        UI.output.innerHTML = '';
+                        renderWelcomeMessage();
+                    }
+                    alert(data.message);
+                } else {
+                    alert(data.error);
+                }
+            } catch (error) {
+                console.error('Authentication error:', error);
+                alert("An error occurred. Please try again later.");
+            }
+        });
+            
+
+        function init() {
+            function applyTheme(theme) { document.documentElement.setAttribute('data-theme', theme); UI.themeBtn.textContent = theme === 'light' ? '🌙' : '☀️'; }
+            UI.themeBtn.onclick = () => { const newTheme = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark' ? 'light' : 'dark'; localStorage.setItem('theme', newTheme); applyTheme(newTheme); };
+            applyTheme(localStorage.getItem('theme') || 'dark');
+
+            function updateTtsUI() { UI.ttsBtn.textContent = appState.ttsEnabled ? '🔊' : '🔇'; }
+            updateTtsUI();
+            UI.ttsBtn.onclick = () => { if (window.speechSynthesis?.speaking) window.speechSynthesis.cancel(); appState.ttsEnabled = !appState.ttsEnabled; localStorage.setItem('va_ttsEnabled', appState.ttsEnabled); updateTtsUI(); };
+
+            UI.clearHistoryBtn.onclick = () => {
+                if (confirm("Are you sure you want to clear the conversation?")) {
+                    UI.output.innerHTML = '';
+                    renderWelcomeMessage();
+                }
+            };
+
+            function submitCommand() {
+                const value = UI.textInput.value;
+                if (value.trim()) {
+                    handleCommand(value);
+                    UI.textInput.value = '';
+                    UI.textInput.style.height = 'auto';
+                }
+            }
+
+            UI.runBtn.onclick = submitCommand;
+            UI.textInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitCommand(); } });
+            UI.textInput.addEventListener('input', () => {
+                UI.textInput.style.height = 'auto';
+                UI.textInput.style.height = (UI.textInput.scrollHeight) + 'px';
+            });
+
+            // Initial checks
+            checkSession();
+            updateAuthUI();
+
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                Object.assign(recognition, { lang: 'en-IN', continuous: false, interimResults: false });
+                recognition.onstart = () => { appState.isListening = true; UI.speakBtn.classList.add('listening'); };
+                recognition.onend = () => { appState.isListening = false; UI.speakBtn.classList.remove('listening'); };
+                recognition.onresult = e => { const text = e.results[0][0].transcript; UI.textInput.value = text; submitCommand(); };
+                recognition.onerror = e => { console.error('Speech recognition error', e); appendBubble(render.error(e.error === 'not-allowed' ? 'Microphone permission denied.' : 'Microphone error.')); };
+                UI.speakBtn.onclick = () => { if (appState.isListening) recognition.stop(); else try { recognition.start(); } catch (err) { console.error("Could not start recognition:", err) } };
+            } else {
+                Object.assign(UI.speakBtn, { disabled: true, innerHTML: `🚫`, title: 'Speech Recognition is not supported in this browser.' });
+            }
+        }
+        init();
+    </script>
 </body>
 </html>

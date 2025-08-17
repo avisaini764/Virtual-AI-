@@ -1,17 +1,32 @@
 import os
 import requests
-# No need for send_from_directory anymore, Flask handles it
-from flask import Flask, jsonify, request, Response
+from flask import Flask, jsonify, request, Response, session, redirect, url_for
 from flask_cors import CORS
 from dotenv import load_dotenv
 import google.generativeai as genai
+from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
+from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 
 # --- 1. SETUP ---
-# IMPORTANT: This tells Flask where to find your frontend files
-app = Flask(__name__, static_folder='static', static_url_path='')
+app = Flask(__name__)
 
-CORS(app) 
+# Load environment variables
 load_dotenv()
+
+# --- SECURITY & DATABASE CONFIGURATION ---
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "a_very_secret_key_that_should_be_changed")
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///evoai.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login' # Name of the login route function
+
+# --- FIX: Explicitly set CORS for routes ---
+# This resolves the 405 error on some platforms like Render
+CORS(app)
 
 # --- API KEY CONFIGURATION ---
 NEWS_API_KEY = os.getenv("NEWS_API_KEY")
@@ -28,18 +43,90 @@ except Exception as e:
     print(f"Error configuring Gemini API: {e}")
     model = None
 
+# --- DATABASE MODELS ---
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+    conversations = db.relationship('Conversation', backref='user', lazy=True)
+
+    def set_password(self, password):
+        self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+
+    def check_password(self, password):
+        return bcrypt.check_password_hash(self.password_hash, password)
+    
+class Conversation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    query = db.Column(db.Text, nullable=False)
+    response = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+# Create the database tables
+with app.app_context():
+    db.create_all()
+
 # ==============================================================================
-# --- 2. SERVE THE FRONTEND (CORRECTED) ---
-# This single route now handles serving index.html for the main URL.
-# Flask will automatically serve other files like title.png from the 'static' folder.
+# --- 2. AUTHENTICATION ROUTES ---
+# ==============================================================================
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({"error": "Username and password are required"}), 400
+
+    existing_user = User.query.filter_by(username=username).first()
+    if existing_user:
+        return jsonify({"error": "Username already exists"}), 409
+
+    new_user = User(username=username)
+    new_user.set_password(password)
+    db.session.add(new_user)
+    db.session.commit()
+    
+    return jsonify({"message": "User registered successfully", "user_id": new_user.id}), 201
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    user = User.query.filter_by(username=username).first()
+
+    if user and user.check_password(password):
+        login_user(user)
+        return jsonify({"message": "Logged in successfully", "user_id": user.id}), 200
+    else:
+        return jsonify({"error": "Invalid username or password"}), 401
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return jsonify({"message": "Logged out successfully"}), 200
+
+@app.route('/get_user_info')
+def get_user_info():
+    if current_user.is_authenticated:
+        return jsonify({"username": current_user.username, "user_id": current_user.id}), 200
+    return jsonify({"username": None, "user_id": None}), 200
+
+# ==============================================================================
+# --- 3. SERVE THE FRONTEND & CORE API ROUTES ---
 # ==============================================================================
 @app.route('/')
 def serve_index():
     return app.send_static_file('index.html')
-# ==============================================================================
 
-
-# --- 3. GEMINI AI STREAMING ROUTE ---
 @app.route('/ask_gemini', methods=['POST'])
 def ask_gemini():
     if not model:
@@ -47,24 +134,50 @@ def ask_gemini():
         
     data = request.get_json()
     prompt = data.get('prompt')
+    user_id = data.get('user_id')
 
     if not prompt:
         return jsonify({"error": "No prompt provided"}), 400
 
-    try:
-        def stream_response():
-            response_chunks = model.generate_content(prompt, stream=True)
-            for chunk in response_chunks:
-                if chunk.text:
-                    yield chunk.text
-        
+    full_response = ""
+    def stream_response():
+        nonlocal full_response
+        response_chunks = model.generate_content(prompt, stream=True)
+        for chunk in response_chunks:
+            if chunk.text:
+                full_response += chunk.text
+                yield chunk.text
+                
+    if user_id and user_id is not None:
+        user = User.query.get(user_id)
+        if user:
+            # Save query to database before streaming response
+            new_conversation = Conversation(user_id=user.id, query=prompt, response="")
+            db.session.add(new_conversation)
+            db.session.commit()
+            
+            # Stream the response and update the conversation entry
+            stream_gen = stream_response()
+            for chunk in stream_gen:
+                yield chunk
+
+            new_conversation.response = full_response
+            db.session.commit()
+        else:
+            return jsonify({"error": "User not found"}), 404
+    else:
         return Response(stream_response(), mimetype='text/plain')
         
-    except Exception as e:
-        print(f"Error with Gemini API stream: {e}")
-        return jsonify({"error": f"An error occurred with the AI service: {e}"}), 500
+    
+@app.route('/get_conversations')
+@login_required
+def get_conversations():
+    conversations = Conversation.query.filter_by(user_id=current_user.id).order_by(Conversation.timestamp).all()
+    conversation_list = [{"query": c.query, "response": c.response} for c in conversations]
+    return jsonify(conversation_list)
 
-# --- 4. OTHER API ROUTES (No changes here) ---
+# --- 4. OTHER API ROUTES (No changes here, except for potential login_required decorators) ---
+# For now, we won't add @login_required to these, so they can still be used without an account.
 @app.route('/get_news')
 def get_news():
     if not NEWS_API_KEY: return jsonify({"error": "News API key is missing."}), 500
@@ -124,4 +237,6 @@ def get_quote():
     return jsonify({"quote":data.get('content'),"author":data.get('author')})
 
 if __name__ == '__main__':
+    # When deploying to Render, you'll need to remove the debug=True and port=5000 arguments
+    # and use the default behavior for the production server.
     app.run(debug=True, port=5000)
