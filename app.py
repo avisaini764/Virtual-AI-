@@ -18,7 +18,13 @@ load_dotenv()
 
 # --- SECURITY & DATABASE CONFIGURATION ---
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "a_very_secret_key_that_should_be_changed")
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+
+# FIX: Use PostgreSQL for Render, SQLite for local development
+if os.getenv("DATABASE_URL"):
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///evoai.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -156,11 +162,9 @@ def ask_gemini():
                     full_response += chunk.text
                     yield chunk.text
         except Exception as e:
-            # FIX: Catch and return a specific error message for Gemini API failures
             yield json.dumps({"error": f"Gemini API Error: {str(e)}"}).encode('utf-8')
 
     try:
-        # Check if the user is logged in and save the conversation
         if user_id and user_id is not None:
             user = db.session.get(User, user_id)
             if user:
