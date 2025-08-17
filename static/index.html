@@ -217,13 +217,14 @@
     }
      
     function renderWelcomeMessage() {
-        appendBubble(render.card("Welcome to evoAI 👋", "I'm your personal AI assistant ... try a command like <strong>news</strong> or <strong>open youtube</strong> to get started."));
+        appendBubble(render.card("Welcome to evoAI!", "I'm your personal AI assistant. You can ask me anything, or try a command like <strong>news</strong> or <strong>weather in Mohali</strong> to get started."));
     }
 
     const api = {
         async request(path, options={}) {
             try {
-                const response = await fetch(`http://127.0.0.1:5000${path}`, options);
+                // *** This line has been updated with your new Render URL ***
+                const response = await fetch(`https://ai-assistant-dfbj.onrender.com${path}`, options);
                 if (!response.ok) { 
                     const errorData = await response.json().catch(() => ({ error: `${response.status} ${response.statusText}` }));
                     throw new Error(errorData.error);
