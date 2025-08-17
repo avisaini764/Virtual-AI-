@@ -601,7 +601,7 @@
                     const { value, done } = await reader.read();
                     if (done) break;
                     fullResponse += decoder.decode(value, { stream: true });
-                    if (fullResponse.includes('"error"')) {
+                    if (fullResponse.startsWith('{"error":')) {
                         const errorData = JSON.parse(fullResponse);
                         contentDiv.innerHTML = render.error(errorData.error);
                         return;

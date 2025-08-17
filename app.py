@@ -143,15 +143,10 @@ def ask_gemini():
         return jsonify({"error": "AI model is not configured. Check API key."}), 500
         
     try:
-        if request.data:  # FIX: Check if request has data before parsing JSON
-            data = request.get_json()
-            prompt = data.get('prompt')
-            user_id = data.get('user_id')
-            print(f"Received prompt: '{prompt}' for user_id: {user_id}")
-        else:
-            prompt = None
-            user_id = None
-            print("Received request with no data.")
+        data = request.get_json() if request.data else {}
+        prompt = data.get('prompt')
+        user_id = data.get('user_id')
+        print(f"Received prompt: '{prompt}' for user_id: {user_id}")
     except Exception as e:
         print(f"Error parsing JSON: {e}")
         return Response(json.dumps({"error": f"Invalid JSON in request: {str(e)}"}), mimetype='application/json', status=400)
