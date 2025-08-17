@@ -383,69 +383,7 @@
         .logo{width:48px;height:48px;flex-shrink:0;position:relative;overflow:hidden}
         .logo img{width:100%;height:100%;object-fit:contain;border-radius:8px}
         @keyframes shine{0%{left:-150%}100%{left:150%}}
-        .logo::before{content:'';position:absolute;top:0;width:75%;height:100%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,0.3) 50%,rgba(255,255,255,0) 100%);transform:skewX(-25deg);animation:shine 4s infinite linear}
-        .brand-text{display:flex;flex-direction:column}
-        .brand-main{display:flex;align-items:center;gap:10px}
-        h1{margin:0;font-size:18px;font-weight:600;color:var(--text);line-height:1.2}
-        .tagline{font-size:16px;color:var(--muted);font-weight:400;white-space:nowrap}
-        .dev-credit{font-size:11px;color:var(--muted);opacity:.7;margin-top:4px}
-        .header-actions{display:flex;gap:8px}
-        .chat-input-area{flex-shrink:0;padding:16px 24px;border-bottom:1px solid var(--border-color);box-shadow:0 2px 4px rgba(0,0,0,0.1);z-index:5}
-        main{flex-grow:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:32px;scroll-behavior:smooth}
-        main::-webkit-scrollbar{width:6px}
-        main::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:3px}
-        .chat-bubble{display:flex;gap:16px;max-width:100%;width:100%;animation:popIn .3s ease;align-self:flex-start}
-        @keyframes popIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-        .bubble-icon{flex-shrink:0;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--input-bg);border:1px solid var(--border-color)}
-        .bubble-icon svg{width:18px;height:18px;color:var(--muted)}
-        .bubble-content{padding:2px 0;line-height:1.6;flex-grow:1}
-        .chat-bubble.user .bubble-content{background-color:transparent;font-weight:500;font-size:16px}
-        .chat-bubble.user .bubble-icon{border-color:var(--accent)}
-        .chat-bubble.assistant .bubble-content{background-color:transparent}
-        .chat-bubble h3{margin:0 0 8px 0;font-size:16px;font-weight:600}
-        .chat-bubble .small{font-size:15px;color:var(--text);line-height:1.6}
-        .chat-bubble .small strong{color:var(--text)}
-        .chat-bubble a.link{color:var(--accent);text-decoration:none;font-weight:500;border-bottom:1px solid transparent;transition:border-color .2s ease}
-        .chat-bubble a.link:hover{border-color:var(--accent)}
-        .chat-bubble .thumb{width:100%;max-width:240px;height:auto;object-fit:cover;border-radius:8px;margin-top:12px}
-        .chat-bubble pre{background-color:rgba(0,0,0,0.3);padding:16px;margin:12px 0 0 0;border-radius:8px;overflow-x:auto;font-family:monospace;font-size:14px;border:1px solid var(--border-color)}
-        html[data-theme="light"] .chat-bubble pre{background-color:rgba(0,0,0,0.03);color:#000;border:1px solid var(--border-color)}
-        .chat-bubble code{font-family:monospace;background-color:rgba(135,131,120,0.15);padding:1px 5px;border-radius:4px}
-        .chat-bubble pre code{background:none;padding:0;border-radius:0}
-        .loader-bubble .bubble-content{padding:12px}
-        .loader{width:28px;height:28px;border:3px solid var(--border-color);border-top-color:var(--accent);border-radius:50%;display:inline-block;animation:rotation .8s linear infinite}
-        @keyframes rotation{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-        .input-wrapper{display:flex;align-items:flex-end;gap:8px;background-color:var(--input-bg);border-radius:12px;padding:8px;border:1px solid var(--border-color);transition:box-shadow .2s ease,border-color .2s ease}
-        .input-wrapper:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),0.3)}
-        textarea#textInput{width:100%;flex-grow:1;background:transparent;border:none;outline:none;resize:none;color:var(--text);font-family:var(--font-family);font-size:16px;line-height:1.5;max-height:150px;padding:8px;transition:height .2s ease}
-        textarea#textInput::-webkit-scrollbar{width:4px}
-        textarea#textInput::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:2px}
-        button{padding:8px;border-radius:8px;cursor:pointer;background:transparent;color:var(--muted);border:none;display:flex;align-items:center;justify-content:center;transition:background-color .2s ease,color .2s ease}
-        button:hover:not(:disabled){background-color:rgba(135,131,120,0.15);color:var(--text)}
-        button:disabled{cursor:not-allowed;opacity:.5}
-        button svg{width:24px;height:24px}
-        button#speakBtn{background-color:var(--input-bg);border:1px solid var(--border-color)}
-        button#speakBtn:hover:not(:disabled){background-color:rgba(135,131,120,0.15);color:var(--text)}
-        button.send-btn{background-color:var(--accent);color:#fff}
-        button.send-btn:hover:not(:disabled){background-color:rgba(var(--accent-rgb),.85)}
-        button.listening{color:var(--accent)}
-        button.listening .mic-icon{animation:pulse 1.5s infinite ease-in-out}
-        @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
-        @media(max-width:768px){body{overflow:hidden}.chat-app{border:none;height:100vh}header{padding:12px 16px}.tagline{display:none}main{padding:16px;gap:24px;flex-grow:1}.chat-input-area{padding:8px 16px 16px;position:relative;bottom:auto;background-color:var(--chat-bg);border-top:none;border-bottom:1px solid var(--border-color)}.chat-bubble{max-width:95%}}
-        .modal{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}
-        .modal.active{opacity:1;visibility:visible}
-        .modal-content{background-color:var(--chat-bg);padding:32px;border-radius:12px;width:90%;max-width:400px;border:1px solid var(--border-color);box-shadow:0 4px 20px var(--shadow-color);position:relative;transform:translateY(-20px);transition:transform .3s ease-out}
-        .modal.active .modal-content{transform:translateY(0)}
-        .modal-content h2{margin-top:0;font-size:24px;text-align:center;font-weight:600}
-        .modal-content form{display:flex;flex-direction:column;gap:16px}
-        .modal-content input[type="text"],.modal-content input[type="password"]{padding:12px;border-radius:8px;border:1px solid var(--border-color);background-color:var(--input-bg);color:var(--text);font-size:16px}
-        .modal-content input::placeholder{color:var(--muted)}
-        .modal-content button[type="submit"]{padding:12px;border-radius:8px;border:none;background-color:var(--accent);color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:background-color .2s}
-        .modal-content button[type="submit"]:hover{background-color:rgba(var(--accent-rgb),.85)}
-        .modal-footer{text-align:center;margin-top:20px;font-size:14px}
-        .modal-footer a{color:var(--accent);cursor:pointer;text-decoration:none}
-        .close-btn{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer}
-    </style>
+        .logo::before{content:'';position:absolute;top:0;width:75%;height:100%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,0.3) 50%,rgba(255,255,255,0) 100%);transform:skewX(-25deg);animation:shine 4s infinite linear}.brand-text{display:flex;flex-direction:column}.brand-main{display:flex;align-items:center;gap:10px}h1{margin:0;font-size:18px;font-weight:600;color:var(--text);line-height:1.2}.tagline{font-size:16px;color:var(--muted);font-weight:400;white-space:nowrap}.dev-credit{font-size:11px;color:var(--muted);opacity:.7;margin-top:4px}.header-actions{display:flex;gap:8px}.chat-input-area{flex-shrink:0;padding:16px 24px;border-bottom:1px solid var(--border-color);box-shadow:0 2px 4px rgba(0,0,0,0.1);z-index:5}main{flex-grow:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:32px;scroll-behavior:smooth}main::-webkit-scrollbar{width:6px}main::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:3px}.chat-bubble{display:flex;gap:16px;max-width:100%;width:100%;animation:popIn .3s ease;align-self:flex-start}@keyframes popIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}.bubble-icon{flex-shrink:0;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--input-bg);border:1px solid var(--border-color)}.bubble-icon svg{width:18px;height:18px;color:var(--muted)}.bubble-content{padding:2px 0;line-height:1.6;flex-grow:1}.chat-bubble.user .bubble-content{background-color:transparent;font-weight:500;font-size:16px}.chat-bubble.user .bubble-icon{border-color:var(--accent)}.chat-bubble.assistant .bubble-content{background-color:transparent}.chat-bubble h3{margin:0 0 8px 0;font-size:16px;font-weight:600}.chat-bubble .small{font-size:15px;color:var(--text);line-height:1.6}.chat-bubble .small strong{color:var(--text)}.chat-bubble a.link{color:var(--accent);text-decoration:none;font-weight:500;border-bottom:1px solid transparent;transition:border-color .2s ease}.chat-bubble a.link:hover{border-color:var(--accent)}.chat-bubble .thumb{width:100%;max-width:240px;height:auto;object-fit:cover;border-radius:8px;margin-top:12px}.chat-bubble pre{background-color:rgba(0,0,0,0.3);padding:16px;margin:12px 0 0 0;border-radius:8px;overflow-x:auto;font-family:monospace;font-size:14px;border:1px solid var(--border-color)}html[data-theme="light"] .chat-bubble pre{background-color:rgba(0,0,0,0.03);color:#000;border:1px solid var(--border-color)}.chat-bubble code{font-family:monospace;background-color:rgba(135,131,120,0.15);padding:1px 5px;border-radius:4px}.chat-bubble pre code{background:none;padding:0;border-radius:0}.loader-bubble .bubble-content{padding:12px}.loader{width:28px;height:28px;border:3px solid var(--border-color);border-top-color:var(--accent);border-radius:50%;display:inline-block;animation:rotation .8s linear infinite}@keyframes rotation{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}.input-wrapper{display:flex;align-items:flex-end;gap:8px;background-color:var(--input-bg);border-radius:12px;padding:8px;border:1px solid var(--border-color);transition:box-shadow .2s ease,border-color .2s ease}.input-wrapper:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),0.3)}textarea#textInput{width:100%;flex-grow:1;background:transparent;border:none;outline:none;resize:none;color:var(--text);font-family:var(--font-family);font-size:16px;line-height:1.5;max-height:150px;padding:8px;transition:height .2s ease}textarea#textInput::-webkit-scrollbar{width:4px}textarea#textInput::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:2px}button{padding:8px;border-radius:8px;cursor:pointer;background:transparent;color:var(--muted);border:none;display:flex;align-items:center;justify-content:center;transition:background-color .2s ease,color .2s ease}button:hover:not(:disabled){background-color:rgba(135,131,120,0.15);color:var(--text)}button:disabled{cursor:not-allowed;opacity:.5}button svg{width:24px;height:24px}button#speakBtn{background-color:var(--input-bg);border:1px solid var(--border-color)}button#speakBtn:hover:not(:disabled){background-color:rgba(135,131,120,0.15);color:var(--text)}button.send-btn{background-color:var(--accent);color:#fff}button.send-btn:hover:not(:disabled){background-color:rgba(var(--accent-rgb),.85)}button.listening{color:var(--accent)}button.listening .mic-icon{animation:pulse 1.5s infinite ease-in-out}@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}@media(max-width:768px){body{overflow:hidden}.chat-app{border:none;height:100vh}header{padding:12px 16px}.tagline{display:none}main{padding:16px;gap:24px;flex-grow:1}.chat-input-area{padding:8px 16px 16px;position:relative;bottom:auto;background-color:var(--chat-bg);border-top:none;border-bottom:1px solid var(--border-color)}.chat-bubble{max-width:95%}}.modal{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}.modal.active{opacity:1;visibility:visible}.modal-content{background-color:var(--chat-bg);padding:32px;border-radius:12px;width:90%;max-width:400px;border:1px solid var(--border-color);box-shadow:0 4px 20px var(--shadow-color);position:relative;transform:translateY(-20px);transition:transform .3s ease-out}.modal.active .modal-content{transform:translateY(0)}.modal-content h2{margin-top:0;font-size:24px;text-align:center;font-weight:600}.modal-content form{display:flex;flex-direction:column;gap:16px}.modal-content input[type="text"],.modal-content input[type="password"]{padding:12px;border-radius:8px;border:1px solid var(--border-color);background-color:var(--input-bg);color:var(--text);font-size:16px}.modal-content input::placeholder{color:var(--muted)}.modal-content button[type="submit"]{padding:12px;border-radius:8px;border:none;background-color:var(--accent);color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:background-color .2s}.modal-content button[type="submit"]:hover{background-color:rgba(var(--accent-rgb),.85)}.modal-footer{text-align:center;margin-top:20px;font-size:14px}.modal-footer a{color:var(--accent);cursor:pointer;text-decoration:none}.close-btn{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer}</style>
 </head>
 <body>
     <div class="chat-app">
@@ -594,7 +532,10 @@
                 "I'm your personal AI assistant. You can ask me anything, or try a command like <strong>news</strong> or <strong>weather in Mohali</strong> to get started. <br><br> To save your conversations, please <a id='signInLink' href='#'>Sign In</a>.";
             appendBubble(render.card(welcomeTitle, welcomeText));
             if (!appState.isLoggedIn) {
-                document.getElementById('signInLink').onclick = (e) => { e.preventDefault(); UI.authModal.classList.add('active'); };
+                const signInLink = document.getElementById('signInLink');
+                if(signInLink) {
+                    signInLink.onclick = (e) => { e.preventDefault(); UI.authModal.classList.add('active'); };
+                }
             }
         }
 
@@ -648,7 +589,37 @@
             wikipedia: r => `<h3>${escapeHtml(r.title)}</h3><p class="small">${escapeHtml(r.extract)}</p><a class="link" href="${r.url}" target="_blank" rel="noopener noreferrer">Read on Wikipedia →</a>${r.thumbnail ? `<img class="thumb" src="${r.thumbnail}" alt="Wikipedia thumbnail">` : ''}`
         };
 
+        // All command handlers
+        async function askGeminiHandler(prompt) {
+            const contentDiv = appendBubble('', 'assistant');
+            try {
+                const response = await api.askGemini(prompt, appState.userId);
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullResponse = "";
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    fullResponse += decoder.decode(value, { stream: true });
+                    // Check for a specific error message from the backend
+                    if (fullResponse.includes('"error"')) {
+                        const errorData = JSON.parse(fullResponse);
+                        contentDiv.innerHTML = render.error(errorData.error);
+                        return;
+                    }
+                    contentDiv.innerHTML = render.card("evoAI", simpleMarkdownToHtml(fullResponse));
+                    UI.output.scrollTop = UI.output.scrollHeight;
+                }
+                speak(getFirstSentence(fullResponse));
+            } catch (err) {
+                console.error("Gemini AI request failed:", err);
+                contentDiv.innerHTML = render.error("I'm having trouble connecting to the AI. Please try again later.");
+                speak("I'm having trouble connecting to the AI. Please try again later.");
+            }
+        }
+
         const commands = [
+            { regex: /^(hi|hello|hey)[.?]?$/i, handler: async () => { const greeting = "Hello there! How can I help you today?"; appendBubble(render.card("evoAI", greeting)); speak(greeting); } },
             { regex: /^(help|commands|what can you do)[.?]?$/i, handler: async () => { const helpText = `I am a conversational AI. I also have specific commands:<ul><li><b>news</b></li><li><b>weather in [city]</b></li><li><b>what is [topic]</b> (Wikipedia)</li><li><b>play [song] on youtube</b></li><li><b>open youtube</b></li><li><b>google [query]</b></li><li><b>time / date</b></li><li><b>joke / quote</b></li></ul>`; appendBubble(render.card("Available Commands", helpText)); speak("Here are some of the things I can do."); } },
             { regex: /^(what'?s the|what is the|current)?\s*(time|date)[.?]?$/i, handler: async () => { const now = new Date(); const t = now.toLocaleTimeString(); const d = now.toLocaleDateString(); const response = `The time is ${t} and the date is ${d}.`; appendBubble(render.card('Time & Date', response)); speak(response); } },
             { regex: /news/i, handler: async () => { const data = await api.getNews(); appendBubble(render.news(data.news)); speak('Here are the latest news headlines.'); } },
@@ -672,25 +643,19 @@
             appendBubble(escapeHtml(cmd), 'user');
 
             try {
+                let commandFound = false;
                 for (const command of commands) {
                     const matches = cmd.match(command.regex);
-                    if (matches) { await command.handler(matches); return; }
+                    if (matches) { 
+                        commandFound = true;
+                        await command.handler(matches); 
+                        break;
+                    }
                 }
-
-                const response = await api.askGemini(cmd, appState.userId);
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let fullResponse = "";
-                const contentDiv = appendBubble('', 'assistant');
-
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    fullResponse += decoder.decode(value, { stream: true });
-                    contentDiv.innerHTML = render.card("evoAI", simpleMarkdownToHtml(fullResponse));
-                    UI.output.scrollTop = UI.output.scrollHeight;
+                
+                if (!commandFound) {
+                    await askGeminiHandler(cmd);
                 }
-                speak(getFirstSentence(fullResponse));
 
             } catch (err) {
                 console.error("Command Error:", err);
@@ -765,7 +730,6 @@
                 UI.authSubmitBtn.textContent = 'Sign Up';
                 UI.modalLinkText.innerHTML = `Already have an account? <a href="#" id="toggle-link">Sign In</a>`;
             }
-            // Fix for the link not working after first click
             document.getElementById('toggle-link').addEventListener('click', (e) => {
                 e.preventDefault();
                 toggleAuthMode();

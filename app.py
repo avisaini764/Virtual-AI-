@@ -24,9 +24,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login_page' # FIX: Point to the new GET login route
+login_manager.login_view = 'login_page'
 
-# --- FINAL FIX: Explicit CORS with credentials support ---
 CORS(app, supports_credentials=True)
 
 # --- API KEY CONFIGURATION ---
@@ -91,8 +90,6 @@ def login():
     
 @app.route('/login_page', methods=['GET'])
 def login_page():
-    # This route is needed for Flask-Login's redirect to work correctly.
-    # It doesn't need to render anything if the frontend handles the UI.
     return jsonify({"message": "Please log in"}), 401
 
 @app.route('/register', methods=['POST'])
@@ -144,7 +141,6 @@ def ask_gemini():
         prompt = data.get('prompt')
         user_id = data.get('user_id')
     except Exception as e:
-        # FIX: Return a simple Response object instead of jsonify to avoid context issues
         return Response(json.dumps({"error": f"Invalid JSON in request: {str(e)}"}), mimetype='application/json', status=400)
         
     if not prompt:
@@ -153,11 +149,15 @@ def ask_gemini():
     full_response = ""
     def stream_response():
         nonlocal full_response
-        response_chunks = model.generate_content(prompt, stream=True)
-        for chunk in response_chunks:
-            if chunk.text:
-                full_response += chunk.text
-                yield chunk.text
+        try:
+            response_chunks = model.generate_content(prompt, stream=True)
+            for chunk in response_chunks:
+                if chunk.text:
+                    full_response += chunk.text
+                    yield chunk.text
+        except Exception as e:
+            # FIX: Catch and return a specific error message for Gemini API failures
+            yield json.dumps({"error": f"Gemini API Error: {str(e)}"}).encode('utf-8')
 
     try:
         # Check if the user is logged in and save the conversation
@@ -168,7 +168,6 @@ def ask_gemini():
                 db.session.add(new_conversation)
                 db.session.commit()
 
-                # Stream the response and update the conversation entry
                 response_generator = stream_response()
                 for chunk in response_generator:
                     yield chunk
