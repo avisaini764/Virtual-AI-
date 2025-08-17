@@ -1,6 +1,7 @@
 import os
 import requests
-from flask import Flask, jsonify, request, Response
+# IMPORTANT: Add send_from_directory to the imports
+from flask import Flask, jsonify, request, Response, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -25,7 +26,23 @@ except Exception as e:
     print(f"Error configuring Gemini API: {e}")
     model = None
 
-# --- 2. GEMINI AI STREAMING ROUTE ---
+# ==============================================================================
+# --- 2. SERVE THE FRONTEND (NEW SECTION) ---
+# This is the new code that fixes the "Not Found" error.
+# ==============================================================================
+@app.route('/')
+def serve_index():
+    """Serves the main index.html file."""
+    return send_from_directory('.', 'index.html')
+
+@app.route('/<path:path>')
+def serve_static_files(path):
+    """Serves other static files like title.png."""
+    return send_from_directory('.', path)
+# ==============================================================================
+
+
+# --- 3. GEMINI AI STREAMING ROUTE ---
 @app.route('/ask_gemini', methods=['POST'])
 def ask_gemini():
     if not model:
@@ -38,13 +55,11 @@ def ask_gemini():
         return jsonify({"error": "No prompt provided"}), 400
 
     try:
-        # This is a generator function that will stream the response
         def stream_response():
-            # Use stream=True to get chunks as they are generated
             response_chunks = model.generate_content(prompt, stream=True)
             for chunk in response_chunks:
                 if chunk.text:
-                    yield chunk.text # Send each piece of text to the frontend
+                    yield chunk.text
         
         return Response(stream_response(), mimetype='text/plain')
         
@@ -52,7 +67,9 @@ def ask_gemini():
         print(f"Error with Gemini API stream: {e}")
         return jsonify({"error": f"An error occurred with the AI service: {e}"}), 500
 
-# --- 3. OTHER API ROUTES ---
+# --- 4. OTHER API ROUTES ---
+# (The rest of your API routes like get_news, get_weather, etc. remain unchanged)
+
 @app.route('/get_news')
 def get_news():
     if not NEWS_API_KEY:
