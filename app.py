@@ -16,7 +16,7 @@ load_dotenv()
 
 # --- SECURITY & DATABASE CONFIGURATION ---
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "a_very_secret_key_that_should_be_changed")
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///evoai.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
