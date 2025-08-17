@@ -601,7 +601,6 @@
                     const { value, done } = await reader.read();
                     if (done) break;
                     fullResponse += decoder.decode(value, { stream: true });
-                    // Check for a specific error message from the backend
                     if (fullResponse.includes('"error"')) {
                         const errorData = JSON.parse(fullResponse);
                         contentDiv.innerHTML = render.error(errorData.error);
@@ -642,8 +641,8 @@
             const cmd = raw.trim();
             appendBubble(escapeHtml(cmd), 'user');
 
+            let commandFound = false;
             try {
-                let commandFound = false;
                 for (const command of commands) {
                     const matches = cmd.match(command.regex);
                     if (matches) { 

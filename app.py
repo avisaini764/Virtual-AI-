@@ -19,11 +19,10 @@ load_dotenv()
 # --- SECURITY & DATABASE CONFIGURATION ---
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "a_very_secret_key_that_should_be_changed")
 
-# FIX: Use PostgreSQL for Render, SQLite for local development
 if os.getenv("DATABASE_URL"):
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///evoai.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(app.root_path, "evoai.db")}'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -139,14 +138,18 @@ def serve_index():
 
 @app.route('/ask_gemini', methods=['POST'])
 def ask_gemini():
+    print("Received request for /ask_gemini")
     if not model:
+        print("Error: AI model is not configured.")
         return jsonify({"error": "AI model is not configured. Check API key."}), 500
         
     try:
         data = request.get_json()
         prompt = data.get('prompt')
         user_id = data.get('user_id')
+        print(f"Received prompt: '{prompt}' for user_id: {user_id}")
     except Exception as e:
+        print(f"Error parsing JSON: {e}")
         return Response(json.dumps({"error": f"Invalid JSON in request: {str(e)}"}), mimetype='application/json', status=400)
         
     if not prompt:
@@ -156,12 +159,16 @@ def ask_gemini():
     def stream_response():
         nonlocal full_response
         try:
+            print("Calling Gemini API...")
             response_chunks = model.generate_content(prompt, stream=True)
             for chunk in response_chunks:
+                print(f"Received chunk: {chunk.text}")
                 if chunk.text:
                     full_response += chunk.text
                     yield chunk.text
+            print("Gemini API call finished.")
         except Exception as e:
+            print(f"Gemini API Error: {e}")
             yield json.dumps({"error": f"Gemini API Error: {str(e)}"}).encode('utf-8')
 
     try:
@@ -171,6 +178,7 @@ def ask_gemini():
                 new_conversation = Conversation(user_id=user.id, query=prompt, response="")
                 db.session.add(new_conversation)
                 db.session.commit()
+                print("Conversation entry created.")
 
                 response_generator = stream_response()
                 for chunk in response_generator:
@@ -179,6 +187,7 @@ def ask_gemini():
                 with app.app_context():
                     new_conversation.response = full_response
                     db.session.commit()
+                print("Conversation entry updated.")
             else:
                 return jsonify({"error": "User not found"}), 404
         else:
