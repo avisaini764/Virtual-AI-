@@ -3,12 +3,12 @@ import requests
 from flask import Flask, jsonify, request, Response, redirect, url_for
 from flask_cors import CORS
 from dotenv import load_dotenv
-import google.generativeai as genai
+import openai
+from sqlalchemy.orm import Mapped, mapped_column
+import json
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
-from sqlalchemy.orm import Mapped, mapped_column
-import json
 
 # --- 1. SETUP ---
 app = Flask(__name__)
@@ -31,22 +31,23 @@ bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login_page'
 
-CORS(app, supports_credentials=True)
+if app.config.get('ENV') == 'development':
+    CORS(app, supports_credentials=True)
 
 # --- API KEY CONFIGURATION ---
 NEWS_API_KEY = os.getenv("NEWS_API_KEY")
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY not found. Make sure it's set in your .env file.")
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY not found. Make sure it's set in your .env file.")
 
 try:
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
+    print("OpenAI client initialized.")
 except Exception as e:
-    print(f"Error configuring Gemini API: {e}")
-    model = None
+    print(f"Error configuring OpenAI API: {e}")
+    openai_client = None
 
 # --- DATABASE MODELS ---
 @login_manager.user_loader
@@ -72,7 +73,6 @@ class Conversation(db.Model):
     response: Mapped[str] = mapped_column(db.Text, nullable=False)
     timestamp: Mapped[db.DateTime] = mapped_column(db.DateTime, default=db.func.current_timestamp())
 
-# Create the database tables
 with app.app_context():
     db.create_all()
 
@@ -136,19 +136,16 @@ def get_user_info():
 def serve_index():
     return app.send_static_file('index.html')
 
-@app.route('/ask_gemini', methods=['POST'])
-def ask_gemini():
-    if not model:
-        print("Error: AI model is not configured.")
+@app.route('/ask_openai', methods=['POST'])
+def ask_openai():
+    if not openai_client:
         return jsonify({"error": "AI model is not configured. Check API key."}), 500
         
     try:
         data = request.get_json() if request.data else {}
         prompt = data.get('prompt')
         user_id = data.get('user_id')
-        print(f"Received prompt: '{prompt}' for user_id: {user_id}")
     except Exception as e:
-        print(f"Error parsing JSON: {e}")
         return Response(json.dumps({"error": f"Invalid JSON in request: {str(e)}"}), mimetype='application/json', status=400)
         
     if not prompt:
@@ -158,17 +155,18 @@ def ask_gemini():
     def stream_response():
         nonlocal full_response
         try:
-            print("Calling Gemini API...")
-            response_chunks = model.generate_content(prompt, stream=True)
-            for chunk in response_chunks:
-                print(f"Received chunk: {chunk.text}")
-                if chunk.text:
-                    full_response += chunk.text
-                    yield chunk.text
-            print("Gemini API call finished.")
+            stream = openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                stream=True,
+            )
+            for chunk in stream:
+                content = chunk.choices[0].delta.content
+                if content:
+                    full_response += content
+                    yield content
         except Exception as e:
-            print(f"Gemini API Error: {e}")
-            yield json.dumps({"error": f"Gemini API Error: {str(e)}"}).encode('utf-8')
+            yield json.dumps({"error": f"OpenAI API Error: {str(e)}"}).encode('utf-8')
 
     try:
         if user_id and user_id is not None:
@@ -177,7 +175,6 @@ def ask_gemini():
                 new_conversation = Conversation(user_id=user.id, query=prompt, response="")
                 db.session.add(new_conversation)
                 db.session.commit()
-                print("Conversation entry created.")
 
                 response_generator = stream_response()
                 for chunk in response_generator:
@@ -186,14 +183,13 @@ def ask_gemini():
                 with app.app_context():
                     new_conversation.response = full_response
                     db.session.commit()
-                print("Conversation entry updated.")
             else:
                 return jsonify({"error": "User not found"}), 404
         else:
             return Response(stream_response(), mimetype='text/plain')
             
     except Exception as e:
-        print(f"Error with Gemini API or database interaction: {e}")
+        print(f"Error with OpenAI API or database interaction: {e}")
         return jsonify({"error": f"An error occurred with the AI service: {e}"}), 500
 
 @app.route('/get_conversations')
@@ -203,7 +199,6 @@ def get_conversations():
     conversation_list = [{"query": c.query, "response": c.response} for c in conversations]
     return jsonify(conversation_list)
 
-# --- 4. OTHER API ROUTES (No changes here) ---
 @app.route('/get_news')
 def get_news():
     if not NEWS_API_KEY: return jsonify({"error": "News API key is missing."}), 500
